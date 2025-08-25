@@ -1,81 +1,84 @@
-from flask import Flask, render_template, send_from_directory, request, redirect, url_for, flash, jsonify
+import csv
+import locale
+import os
+import secrets
 from datetime import datetime
-import os, csv, locale, shutil, secrets 
 
-locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+from flask import (
+    Flask,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
+
+locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
 VIDEO_DIR = "videos"
 LOG_FILE = "logs/detections.csv"
-LABEL_TRANSLATIONS = {
-    "person": "Personne",
-    "bird": "Oiseau"
-}
+LABEL_TRANSLATIONS = {"person": "Personne", "bird": "Oiseau"}
 
-def get_free_space_mb(path="/"):
-    total, used, free = shutil.disk_usage(path)
-    return free // (1024 * 1024)  # en Mo
 
-def is_recording():
-    return os.path.exists("/home/slaur/Documents/Birdwatcher/recording.flag")
+def load_detections():
+    detections = {}
+    with open("logs/detections.csv", newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            video = row["video_path"]
+            label = row["label"]
+            confidence = float(row["confidence"])
+            timestamp_str = row.get("timestamp", "")
+            try:
+                dt = datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
+                formatted_date = dt.strftime("%d %B %Y à %Hh%M")
+            except ValueError:
+                formatted_date = "Date inconnue"
 
-@app.route('/')
+            translated_label = LABEL_TRANSLATIONS.get(label, label)
+            detections[video] = {
+                "label": translated_label,
+                "confidence": round(confidence * 100, 1),
+                "date": formatted_date,
+            }
+    return detections
+
+
+# Routes
+@app.route("/")
 def index():
+    return render_template("index.html")
+
+
+@app.route("/videos")
+def videos():
     dates = sorted(os.listdir(VIDEO_DIR), reverse=True)
-    videos_by_date = {}
-    video_logs = {}
-    
-    free_space_mb = get_free_space_mb()
-    low_disk_space = free_space_mb < 100
-
-    log_entries = []
-    if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, newline='') as f:
-            reader = csv.reader(f)
-            all_rows = list(reader)
-            headers = all_rows[0]
-            log_entries = all_rows[1:]
-
+    detections = load_detections()
+    video_map = {}
     for date in dates:
         path = os.path.join(VIDEO_DIR, date)
         if os.path.isdir(path):
-            files = sorted(os.listdir(path), reverse=True)
-            videos_by_date[date] = files
-            for file in files:
-                if file.endswith(".mp4"):
-                    full_path = f"videos/{date}/{file}"
-                    logs = [entry for entry in log_entries if entry[3] == full_path]
-                    if logs:
-                        raw = logs[0]
-                        # Reformater les champs
-                        timestamp = datetime.strptime(raw[0], "%Y-%m-%d_%H-%M-%S")
-                        formatted_date = timestamp.strftime("%d %B %Y à %Hh%M")
-                        label = LABEL_TRANSLATIONS.get(raw[1], raw[1].capitalize())
-                        confidence = f"{float(raw[2]) * 100:.1f} %"
-                        video_logs[file] = {
-                            "date": formatted_date,
-                            "label": label,
-                            "confidence": confidence
-                        }
-                        
-    return render_template("index.html", 
-                           videos_by_date=videos_by_date, 
-                           video_logs=video_logs, 
-                           low_disk_space=low_disk_space, 
-                           free_space_mb=free_space_mb, 
-                           is_recording=is_recording()
-                        )
+            video_map[date] = sorted(os.listdir(path), reverse=True)
+    return render_template("videos.html", video_map=video_map, detections=detections)
 
-@app.route('/videos/<date>/<filename>')
+
+@app.route("/videos/<date>/<filename>")
 def serve_video(date, filename):
     return send_from_directory(os.path.join(VIDEO_DIR, date), filename)
+
 
 @app.route("/delete", methods=["POST"])
 def delete_video():
     video_rel_path = request.form.get("video_path")
-    video_abs_path = os.path.join(VIDEO_DIR, video_rel_path)
+    video_abs_path = os.path.abspath(os.path.join(VIDEO_DIR, video_rel_path))
+
+    if not video_abs_path.startswith(os.path.abspath(VIDEO_DIR)):
+        flash("Chemin non autorisé.", "danger")
+        return redirect(url_for("index"))
 
     try:
         if os.path.exists(video_abs_path):
@@ -86,12 +89,8 @@ def delete_video():
     except Exception as e:
         flash(f"Erreur lors de la suppression : {e}", "danger")
 
-    return redirect(url_for("index"))
+    return redirect(url_for("videos"))
 
-@app.route('/status')
-def status():
-    is_recording_status = is_recording()
-    return jsonify({"is_recording": is_recording_status})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)

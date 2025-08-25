@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Mes vidéos - Birdwatcher{% endblock %}
+
+{% block content %}
+<div class="p-4 space-y-6">
+    {% for date, files in video_map.items() %}
+    <div class="collapse collapse-arrow bg-base-200 rounded-box">
+        <input type="checkbox" id="collapse-{{ loop.index }}" />
+        <div class="collapse-title text-lg font-semibold text-primary">
+            Vidéos du {{ date }}
+        </div>
+        <div class="collapse-content">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                {% for file in files %}
+                <div class="card bg-base-100 shadow-md hover:shadow-lg transition">
+                    <div class="card-body">
+                        {% set video_key = 'videos/' ~ date ~ '/' ~ file %}
+                        {% set detection = detections.get(video_key) %}
+                        {% if detection %}
+                        <p class="text-sm text-gray-600">
+                            Nom de la vidéo : <strong>{{ file }}</strong><br>
+                            Prise de vue : <strong>{{ detection.date }}</strong><br>
+                            Détection : <strong>{{ detection.label }}</strong><br>
+                            Confiance : <strong>{{ detection.confidence }}%</strong>
+                        </p>
+                        {% else %}
+                        <p class="text-sm text-gray-400 italic">Aucune détection</p>
+                        {% endif %}
+                        <div class="card-actions justify-end mt-4 space-x-2">
+                            <div class="tooltip" data-tip="Télécharger la vidéo">
+                                <a href="{{ url_for('serve_video', date=date, filename=file) }}" download
+                                    class="btn btn-sm btn-outline btn-primary">
+                                    📥
+                                </a>
+                            </div>
+                            <div class="tooltip" data-tip="Lire la vidéo">
+                                <a href="{{ url_for('serve_video', date=date, filename=file) }}"
+                                    class="btn btn-sm btn-outline btn-accent">
+                                    ▶️
+                                </a>
+                            </div>
+                            <div class="tooltip" data-tip="Supprimer la vidéo">
+                                <form action="{{ url_for('delete_video') }}" method="POST"
+                                    onsubmit="return confirm('Supprimer cette vidéo ?')">
+                                    <input type="hidden" name="video_path" value="{{ date }}/{{ file }}">
+                                    <button type="submit" class="btn btn-sm btn-outline btn-error"
+                                        data-tip="Supprimer la vidéo">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

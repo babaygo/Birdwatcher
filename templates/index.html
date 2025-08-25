@@ -1,82 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Birdwatcher{% endblock %}
+{% block title %}Accueil - Birdwatcher{% endblock %}
 
 {% block content %}
-
-{% if low_disk_space %}
-<div class="alert alert-danger text-center" role="alert">
-  ⚠️ Espace disque faible : il ne reste que {{ free_space_mb }} Mo disponibles.<br>
-  Pensez à décharger les vidéos.
-</div>
-{% endif %}
-
-<div class="accordion" id="videoAccordion">
-  {% for date, files in videos_by_date.items() %}
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="heading-{{ loop.index }}">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-        data-bs-target="#collapse-{{ loop.index }}" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
-        Vidéo(s) du {{ date }}
-      </button>
-    </h2>
-    <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ loop.index }}">
-      <div class="accordion-body">
-        <ul class="list-group">
-          {% for file in files %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>
-              <a href="/videos/{{ date }}/{{ file }}">{{ file }}</a>
-            </span>
-            <div class="btn-group align-items-center">
-              <a href="/videos/{{ date }}/{{ file }}" download class="btn btn-sm btn-outline-primary"
-                data-bs-toggle="tooltip" title="Télécharger">
-                <i class="bi bi-download"></i>
-              </a>
-
-              {% if file in video_logs %}
-              {% set modal_id = "infoModal-" ~ date ~ "-" ~ loop.index0 %}
-              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#{{ modal_id }}">
-                <i class="bi bi-info-circle"></i>
-              </button>
-              {% endif %}
-
-              <form method="POST" action="{{ url_for('delete_video') }}"
-                onsubmit="return confirm('Supprimer cette vidéo ?');">
-                <input type="hidden" name="video_path" value="{{ date }}/{{ file }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Supprimer">
-                  <i class="bi bi-x-circle"></i>
-                </button>
-              </form>
-            </div>
-          </li>
-          {% if file in video_logs %}
-          <div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}Label"
-            aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="{{ modal_id }}Label">Informations du contenu de {{ file }}</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body">
-                  <ul class="list-group">
-                    <li class="list-group-item"><strong>Date de l'enregistrement:</strong> {{ video_logs[file].date }}
-                    </li>
-                    <li class="list-group-item"><strong>Sujet détecté :</strong> {{ video_logs[file].label }}</li>
-                    <li class="list-group-item"><strong>Confiance de la détection :</strong> {{
-                      video_logs[file].confidence }}</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-          {% endif %}
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-  {% endfor %}
+<div class="p-6">
+    <h1 class="text-2xl font-bold text-primary mb-2">🐦 Birdwatcher</h1>
+    <p class="text-gray-700">Bienvenue sur votre interface mobile</p>
 </div>
 {% endblock %}
