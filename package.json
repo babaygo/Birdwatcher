@@ -1,0 +1,25 @@
+{
+  "name": "birdwatcher",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/babaygo/Birdwatcher.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/babaygo/Birdwatcher/issues"
+  },
+  "homepage": "https://github.com/babaygo/Birdwatcher#readme",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.13",
+    "daisyui": "^5.1.7",
+    "tailwindcss": "^4.1.13"
+  }
+}

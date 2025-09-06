@@ -39,4 +39,7 @@ coverage.xml
 # Misc
 *.sqlite3
 
+# Node modules
+node_modules/
+
 videos/
