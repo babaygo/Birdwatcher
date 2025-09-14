@@ -29,10 +29,14 @@ def load_detections():
     with open("logs/detections.csv", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            video = row["video_path"]
+            video_path = row["video_path"]
+
+            rel_path = os.path.relpath(video_path, start=VIDEO_DIR)
+
             label = row["label"]
             confidence = float(row["confidence"])
             timestamp_str = row.get("timestamp", "")
+
             try:
                 dt = datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
                 formatted_date = dt.strftime("%d %B %Y à %Hh%M")
@@ -40,7 +44,8 @@ def load_detections():
                 formatted_date = "Date inconnue"
 
             translated_label = LABEL_TRANSLATIONS.get(label, label)
-            detections[video] = {
+
+            detections[rel_path] = {
                 "label": translated_label,
                 "confidence": round(confidence * 100, 1),
                 "date": formatted_date,
@@ -63,6 +68,8 @@ def videos():
         path = os.path.join(VIDEO_DIR, date)
         if os.path.isdir(path):
             video_map[date] = sorted(os.listdir(path), reverse=True)
+    
+    print(detections)
     return render_template("videos.html", video_map=video_map, detections=detections)
 
 

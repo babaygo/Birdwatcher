@@ -15,7 +15,7 @@
                 {% for file in files %}
                 <div class="card bg-base-100 shadow-md hover:shadow-lg transition">
                     <div class="card-body">
-                        {% set video_key = 'videos/' ~ date ~ '/' ~ file %}
+                        {% set video_key = date ~ '/' ~ file %}
                         {% set detection = detections.get(video_key) %}
                         {% if detection %}
                         <p class="text-sm text-gray-600">
