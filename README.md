@@ -1,4 +1,4 @@
-# 🦉 Birdwatcher – Système autonome d'observation et d'enregistrement vidéo
+# 🦉 Birdwatcher – Système autonome d'observation et d'enregistrement vidéo en pleine nature
 
 Birdwatcher est une application **Flask** pour Raspberry Pi, conçue pour l’observation de la faune (et particulièrement les oiseaux) en conditions de terrain.  
 Elle combine **détection de mouvements** et **IA (YOLOv8)** pour déclencher l’enregistrement vidéo, avec une interface web locale optimisée pour mobile et utilisable même sans connexion Internet.
