@@ -41,15 +41,15 @@ Raspberry Pi 4
 - Accès SSH ou écran/clavier
 
 ### 2. Cloner le dépôt
-git clone https://github.com/babaygo/Birdwatcher.git
-cd Birdwatcher
-git checkout dev
+`git clone https://github.com/babaygo/Birdwatcher.git`
+`cd Birdwatcher`
+`git checkout dev`
 
 ### 3. Installer les dépendances Python
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 ### 4. Lancer l'application
-python app.py
+`python app.py`
 
 ## Utilisation
 Connectez-vous au wi-fi local puis, ouvrez un navigateur et accédez à :
