@@ -19,13 +19,14 @@ Elle combine **détection de mouvements** et **IA (YOLOv8)** pour déclencher l�
 
 ## Architecture
 
-Raspberry Pi 4 ├── app.py # Serveur Flask 
-├── detect_capture.py # Détection PIR + capture vidéo 
-├── yolov8n.pt # Modèle IA YOLOv8n 
-├── templates/ # Pages HTML 
-├── static/css/ # Styles Tailwind + DaisyUI locaux 
-├── videos/ # Stockage des vidéos 
-└── logs/ # Journaux système
+Raspberry Pi 4 
+* app.py # Serveur Flask 
+* detect_capture.py # Détection PIR + capture vidéo 
+* yolov8n.pt # Modèle IA YOLOv8n 
+* templates/ # Pages HTML 
+* static/css/ # Styles Tailwind + DaisyUI locaux 
+* videos/ # Stockage des vidéos 
+* logs/ # Journaux système
 
 ---
 
