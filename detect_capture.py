@@ -12,7 +12,7 @@ from picamera2.encoders import H264Encoder
 from ultralytics import YOLO
 
 # === Configuration ===
-PIR_GPIO = 14
+PIR_GPIO = 16
 IR_CUT_GPIO = 18
 VIDEO_DIR = "videos"
 LOG_DIR = "logs"
