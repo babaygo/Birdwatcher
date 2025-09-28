@@ -64,12 +64,17 @@ def videos():
     dates = sorted(os.listdir(VIDEO_DIR), reverse=True)
     detections = load_detections()
     video_map = {}
+
     for date in dates:
         path = os.path.join(VIDEO_DIR, date)
         if os.path.isdir(path):
-            video_map[date] = sorted(os.listdir(path), reverse=True)
-    
-    print(detections)
+            files = sorted(os.listdir(path), reverse=True)
+            video_files = [
+                f for f in files if f.lower().endswith((".mp4"))
+            ]
+            if video_files:
+                video_map[date] = video_files
+
     return render_template("videos.html", video_map=video_map, detections=detections)
 
 
