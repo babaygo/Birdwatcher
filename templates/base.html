@@ -10,9 +10,8 @@
 </head>
 
 <body data-theme="nord"
-    style="display: flex;flex-direction: column;min-height: 100vh;overflow-y: auto;align-items: center;">
+    style="display: flex;flex-direction: column;min-height: 100vh;overflow-y: auto;align-items: center; min-height: 100vh;">
 
-    <!-- Contenu principal -->
     <div class="flex-1 drawer lg:drawer-open">
         <input id="my-drawer" type="checkbox" class="drawer-toggle" />
 
@@ -20,28 +19,24 @@
             {% block content %}{% endblock %}
         </div>
 
-        <!-- Menu latéral pour grands écrans -->
         <div class="drawer-side hidden lg:block">
             <label for="my-drawer" class="drawer-overlay"></label>
             <ul class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
-                <li><a href="{{ url_for('index') }}">Accueil</a></li>
                 <li><a href="{{ url_for('videos') }}">Vidéos</a></li>
+                <li><a href="{{ url_for('index') }}">Sytème</a></li>
             </ul>
         </div>
     </div>
 
-    <!-- Barre de navigation en bas pour mobile -->
-    <div class="lg:hidden"
+    <div class="flex md:hidden"
         style="width: 100%; position: fixed; bottom: 0; left: 0; display: flex; justify-content: space-around; background: rgb(180, 200, 210); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 6px 0;">
-
-        <a href="{{ url_for('index') }}"
-            style="padding: 4px; display: flex; flex-direction: column; align-items: center;">
-            <label>Accueil</label>
-        </a>
-
         <a href="{{ url_for('videos') }}"
             style="padding: 4px; display: flex; flex-direction: column; align-items: center;">
             <label>Vidéos</label>
+        </a>
+        <a href="{{ url_for('index') }}"
+            style="padding: 4px; display: flex; flex-direction: column; align-items: center;">
+            <label>Sytème</label>
         </a>
     </div>
 </body>

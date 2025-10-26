@@ -4,59 +4,197 @@
 
 {% block content %}
 <div class="p-4 space-y-6">
-    {% for date, files in video_map.items() %}
-    <div class="collapse collapse-arrow bg-base-200 rounded-box">
-        <input type="checkbox" id="collapse-{{ loop.index }}" />
-        <div class="collapse-title text-lg font-semibold text-primary">
-            Vidéos du {{ date }}
-        </div>
-        <div class="collapse-content">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                {% for file in files %}
-                <div class="card bg-base-100 shadow-md hover:shadow-lg transition">
-                    <div class="card-body">
-                        {% set video_key = date ~ '/' ~ file %}
-                        {% set detection = detections.get(video_key) %}
-                        {% if detection %}
-                        <p class="text-sm text-gray-600">
-                            Nom de la vidéo : <strong>{{ file }}</strong><br>
-                            Prise de vue : <strong>{{ detection.date }}</strong><br>
-                            Détection : <strong>{{ detection.label }}</strong><br>
-                            Confiance : <strong>{{ detection.confidence }}%</strong>
-                        </p>
-                        {% else %}
-                        <p class="text-sm text-gray-400 italic">Aucune détection</p>
-                        {% endif %}
-                        <div class="card-actions justify-end mt-4 space-x-2">
-                            <div class="tooltip" data-tip="Télécharger la vidéo">
-                                <a href="{{ url_for('serve_video', date=date, filename=file) }}" download
-                                    class="btn btn-sm btn-outline btn-primary">
-                                    📥
-                                </a>
-                            </div>
-                            <div class="tooltip" data-tip="Lire la vidéo">
-                                <a href="{{ url_for('serve_video', date=date, filename=file) }}"
-                                    class="btn btn-sm btn-outline btn-accent">
-                                    ▶️
-                                </a>
-                            </div>
-                            <div class="tooltip" data-tip="Supprimer la vidéo">
-                                <form action="{{ url_for('delete_video') }}" method="POST"
-                                    onsubmit="return confirm('Supprimer cette vidéo ?')">
-                                    <input type="hidden" name="video_path" value="{{ date }}/{{ file }}">
-                                    <button type="submit" class="btn btn-sm btn-outline btn-error"
-                                        data-tip="Supprimer la vidéo">
-                                        🗑️
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+    <div id="bulk-actions">
+        <div class="flex items-center justify-between w-full flex-wrap gap-2">
+            <span id="selected-count">0 vidéo(s) sélectionnée(s)</span>
+            <div style="display: flex; flex-direction: column; padding-bottom: 4px;">
+                <button onclick="deselectAll()" class="btn btn-sm btn-ghost">Désélectionner</button>
+                <button onclick="downloadSelectedAsZip()" class="btn btn-sm btn-success">
+                    📦 Télécharger ZIP
+                </button>
+                <button onclick="deleteSelected()" class="btn btn-sm btn-error">🗑️ Supprimer</button>
             </div>
         </div>
     </div>
-    {% endfor %}
+
+    <!-- Indicateur de chargement pour le ZIP -->
+    <div id="zip-loading" class="alert alert-warning hidden">
+        <span class="loading loading-spinner"></span>
+        <span>Préparation du ZIP en cours... Veuillez patienter.</span>
+    </div>
+
+    <form id="bulk-delete-form" action="{{ url_for('delete_video') }}" method="POST">
+        {% for date, files in video_map.items() %}
+        <div class="collapse collapse-arrow bg-base-200 mb-2">
+            <input type="checkbox" id="collapse-{{ loop.index }}" />
+            <div class="collapse-title text-lg font-semibold flex items-center justify-between flex-wrap gap-2">
+                <span class="text-primary">Vidéos du {{ date }} ({{ files|length }})</span>
+                <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                    <button type="button" onclick="toggleDateSelection('{{ date }}', true)"
+                        class="btn btn-xs btn-outline btn-primary">
+                        ✓ Tout
+                    </button>
+                    <button type="button" onclick="toggleDateSelection('{{ date }}', false)"
+                        class="btn btn-xs btn-outline btn-ghost">
+                        ✗ Rien
+                    </button>
+                </div>
+            </div>
+            <div class="collapse-content">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                    {% for file in files %}
+                    <div class="card bg-base-100 shadow-md hover:shadow-lg transition relative">
+                        <div class="card-body p-4">
+                            {% set video_key = date ~ '/' ~ file %}
+                            {% set detection = detections.get(video_key) %}
+
+                            <div class="flex items-start gap-2">
+                                <input type="checkbox" name="video_paths" value="{{ date }}/{{ file }}"
+                                    class="checkbox checkbox-primary video-checkbox mt-1" data-date="{{ date }}"
+                                    onchange="updateBulkActions()">
+
+                                <div class="flex-1 min-w-0">
+                                    {% if detection %}
+                                    <p class="text-sm text-gray-600">
+                                        <strong class="block truncate">{{ file }}</strong>
+                                        Prise : <strong>{{ detection.date }}</strong><br>
+                                        Détection : <strong>{{ detection.label }}</strong><br>
+                                        Confiance : <strong>{{ detection.confidence }}%</strong>
+                                    </p>
+                                    {% else %}
+                                    <p class="text-sm text-gray-400 italic">
+                                        <strong class="block truncate">{{ file }}</strong>
+                                        Aucune détection
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="card-actions justify-end mt-2 gap-1">
+                                <div class="tooltip" data-tip="Télécharger">
+                                    <a href="{{ url_for('serve_video', date=date, filename=file) }}" download
+                                        class="btn btn-xs btn-outline btn-primary">
+                                        📥
+                                    </a>
+                                </div>
+                                <div class="tooltip" data-tip="Lire">
+                                    <a href="{{ url_for('serve_video', date=date, filename=file) }}"
+                                        class="btn btn-xs btn-outline btn-accent">
+                                        ▶️
+                                    </a>
+                                </div>
+                                <div class="tooltip" data-tip="Supprimer">
+                                    <button type="button" onclick="deleteSingleVideo('{{ date }}/{{ file }}')"
+                                        class="btn btn-xs btn-outline btn-error">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </form>
 </div>
+
+<script>
+    function updateBulkActions() {
+        const checkboxes = document.querySelectorAll('.video-checkbox:checked');
+        const bulkActions = document.getElementById('bulk-actions');
+        const selectedCount = document.getElementById('selected-count');
+
+        if (checkboxes.length > 0) {
+            selectedCount.textContent = `${checkboxes.length} vidéo(s) sélectionnée(s)`;
+        }
+    }
+
+    function toggleDateSelection(date, checked) {
+        const checkboxes = document.querySelectorAll(`.video-checkbox[data-date="${date}"]`);
+        if (checkboxes.length === 0) {
+            alert('Aucune vidéo sélectionnée');
+            return;
+        };
+        
+        checkboxes.forEach(cb => cb.checked = checked);
+        updateBulkActions();
+    }
+
+    function deselectAll() {
+        document.querySelectorAll('.video-checkbox').forEach(cb => cb.checked = false);
+        updateBulkActions();
+    }
+
+    function deleteSelected() {
+        const checkboxes = document.querySelectorAll('.video-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Aucune vidéo sélectionnée');
+            return;
+        };
+
+        const count = checkboxes.length;
+        if (confirm(`Voulez-vous vraiment supprimer ${count} vidéo(s) ?`)) {
+            document.getElementById('bulk-delete-form').submit();
+        }
+    }
+
+    async function downloadSelectedAsZip() {
+        const checkboxes = document.querySelectorAll('.video-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Aucune vidéo sélectionnée');
+            return;
+        }
+
+        const videoPaths = Array.from(checkboxes).map(cb => cb.value);
+        const loadingAlert = document.getElementById('zip-loading');
+
+        try {
+            loadingAlert.classList.remove('hidden');
+
+            const response = await fetch('{{ url_for("download_videos_zip") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ video_paths: videoPaths })
+            });
+
+            if (!response.ok) throw new Error('Erreur lors de la création du ZIP');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `birdwatcher_videos_${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+        } catch (error) {
+            alert('Erreur lors du téléchargement : ' + error.message);
+        } finally {
+            loadingAlert.classList.add('hidden');
+        }
+    }
+
+    function deleteSingleVideo(videoPath) {
+        if (confirm('Supprimer cette vidéo ?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url_for('delete_video') }}";
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'video_paths';
+            input.value = videoPath;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
 {% endblock %}

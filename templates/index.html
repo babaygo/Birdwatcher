@@ -1,10 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}Accueil - Birdwatcher{% endblock %}
+{% block title %}Birdwatcher{% endblock %}
 
 {% block content %}
 <div class="p-6">
     <h1 class="text-2xl font-bold text-primary mb-2">Birdwatcher</h1>
-    <p class="text-gray-700">Bienvenue sur votre interface mobile</p>
+    
+    <div class="w-full mb-6">
+        <h2 class="text-lg font-semibold text-primary mb-4">Informations système</h2>
+
+        <!-- Jauge de stockage -->
+        <div class="w-full mb-6">
+            {% set pourcentage = (used_memoire / total_memoire) * 100 %}
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold">Utilisation du stockage</h2>
+                <p><strong>{{ "%.2f"|format(pourcentage) }}%</strong> utilisé</p>
+            </div>
+            <progress class="progress progress-success w-full h-4" value="{{ pourcentage }}" max="100">
+            </progress>
+        </div>
+    </div>
 </div>
+
+<script>
+    const progress = document.querySelector('.progress');
+    const percent = progress.dataset.pourcentage;
+    progress.style.width = percent + '%';
+</script>
 {% endblock %}

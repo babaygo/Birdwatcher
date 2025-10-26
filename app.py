@@ -2,6 +2,9 @@ import csv
 import locale
 import os
 import secrets
+import shutil
+import zipfile
+import io
 from datetime import datetime
 
 from flask import (
@@ -12,6 +15,7 @@ from flask import (
     request,
     send_from_directory,
     url_for,
+    send_file,
 )
 
 locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
@@ -53,10 +57,21 @@ def load_detections():
     return detections
 
 
+def get_stockage():
+    total, used, free = shutil.disk_usage("/")
+    return total // (2**20), used // (2**20), free // (2**20)
+
+
 # Routes
 @app.route("/")
 def index():
-    return render_template("index.html")
+    total_memoire, used_memoire, memoire = get_stockage()
+    return render_template(
+        "index.html",
+        memoire=memoire,
+        used_memoire=used_memoire,
+        total_memoire=total_memoire,
+    )
 
 
 @app.route("/videos")
@@ -69,9 +84,7 @@ def videos():
         path = os.path.join(VIDEO_DIR, date)
         if os.path.isdir(path):
             files = sorted(os.listdir(path), reverse=True)
-            video_files = [
-                f for f in files if f.lower().endswith((".mp4"))
-            ]
+            video_files = [f for f in files if f.lower().endswith((".mp4"))]
             if video_files:
                 video_map[date] = video_files
 
@@ -85,23 +98,78 @@ def serve_video(date, filename):
 
 @app.route("/delete", methods=["POST"])
 def delete_video():
-    video_rel_path = request.form.get("video_path")
-    video_abs_path = os.path.abspath(os.path.join(VIDEO_DIR, video_rel_path))
+    video_paths = request.form.getlist("video_paths")
 
-    if not video_abs_path.startswith(os.path.abspath(VIDEO_DIR)):
-        flash("Chemin non autorisé.", "danger")
-        return redirect(url_for("index"))
+    if not video_paths:
+        single_path = request.form.get("video_path")
+        if single_path:
+            video_paths = [single_path]
 
-    try:
-        if os.path.exists(video_abs_path):
-            os.remove(video_abs_path)
-            flash(f"Vidéo supprimée : {video_rel_path}", "success")
+    if not video_paths:
+        flash("Aucune vidéo sélectionnée.", "warning")
+        return redirect(url_for("videos"))
+
+    deleted_count = 0
+    errors = []
+
+    for video_rel_path in video_paths:
+        video_abs_path = os.path.abspath(os.path.join(VIDEO_DIR, video_rel_path))
+
+        if not video_abs_path.startswith(os.path.abspath(VIDEO_DIR)):
+            errors.append(f"{video_rel_path}: Chemin non autorisé")
+            continue
+
+        try:
+            if os.path.exists(video_abs_path):
+                os.remove(video_abs_path)
+                deleted_count += 1
+            else:
+                errors.append(f"{video_rel_path}: Fichier introuvable")
+        except Exception as e:
+            errors.append(f"{video_rel_path}: {str(e)}")
+
+    # Messages de retour
+    if deleted_count > 0:
+        if deleted_count == 1:
+            flash("1 vidéo supprimée avec succès.", "success")
         else:
-            flash("Fichier introuvable.", "warning")
-    except Exception as e:
-        flash(f"Erreur lors de la suppression : {e}", "danger")
+            flash(f"{deleted_count} vidéos supprimées avec succès.", "success")
+
+    if errors:
+        for error in errors:
+            flash(error, "danger")
 
     return redirect(url_for("videos"))
+
+
+@app.route("/download-videos-zip", methods=["POST"])
+def download_videos_zip():
+    data = request.get_json()
+    video_paths = data.get("video_paths", [])
+
+    if not video_paths:
+        return {"error": "Aucune vidéo sélectionnée"}, 400
+
+    # Créer un ZIP en mémoire
+    memory_file = io.BytesIO()
+
+    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for video_path in video_paths:
+            date, filename = video_path.split("/")
+            full_path = os.path.join("videos", date, filename)
+
+            if os.path.exists(full_path):
+                # Ajouter au ZIP avec un nom simplifié
+                zipf.write(full_path, arcname=f"{date}_{filename}")
+
+    memory_file.seek(0)
+
+    return send_file(
+        memory_file,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"birdwatcher_videos_{date}.zip",
+    )
 
 
 if __name__ == "__main__":
