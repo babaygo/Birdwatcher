@@ -16,8 +16,8 @@ PIR_GPIO = 16
 IR_CUT_GPIO = 18
 VIDEO_DIR = "videos"
 LOG_DIR = "logs"
-MAX_DURATION = 45  # Durée max d'un enregistrement
-NO_PRESENCE_TIMEOUT = 6  # Timeout avant arrêt si plus de détection
+MAX_DURATION = 60  # Durée max d'un enregistrement
+NO_PRESENCE_TIMEOUT = 15  # Timeout avant arrêt si plus de détection
 TARGET_CLASSES = {"person", "bird"}
 STATUS_RECORDING_FILE = "/home/slaur/Documents/Birdwatcher/recording.flag"
 
@@ -175,7 +175,7 @@ try:
                     time.sleep(0.05)
 
                 stop_recording(video_path, label, confidence, timestamp)
-                time.sleep(2)  # petite pause avant reprise
+                time.sleep(2)  # pause avant reprise
 
         time.sleep(0.1)
 
